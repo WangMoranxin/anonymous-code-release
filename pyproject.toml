@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apd-gr"
+version = "0.1.0"
+description = "Architecture-agnostic autoregressive-to-parallel distillation for generative recommendation"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["torch", "transformers>=4.45", "pyyaml", "numpy", "tqdm"]
+
+[project.optional-dependencies]
+diger = ["accelerate", "scikit-learn", "faiss-cpu"]
+minionerec = ["pandas"]
+causal-peft = ["peft"]
+dev = ["pytest"]
+
+[project.scripts]
+apd-gr-cache = "apd_gr.scripts.prepare_cache:main"
+apd-gr-train = "apd_gr.scripts.train:main"
+apd-gr-evaluate = "apd_gr.scripts.evaluate:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
