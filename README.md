@@ -15,16 +15,6 @@ The framework exposes one adapter API for both decoder-only and encoder-decoder 
 
 In the accompanying study, APD-GR is evaluated on three datasets and five generative-recommendation backbones. It reaches a 9.22× average end-to-end inference speedup while largely preserving recommendation quality.
 
-## Supported backbones
-
-| `BACKBONE` value | Target family |
-| --- | --- |
-| `letter-lc-rec` | Causal language model / PEFT adapter |
-| `letter-tiger` | Standard T5 |
-| `cofirec` | CoFiRec |
-| `diger` | DIGER |
-| `minionerec` | MiniOneRec |
-
 ## Installation
 
 Create and activate a Python environment, then install the recorded dependencies from the repository root:
