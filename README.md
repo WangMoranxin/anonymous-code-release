@@ -15,65 +15,90 @@ The framework exposes one adapter API for both decoder-only and encoder-decoder 
 
 In the accompanying study, APD-GR is evaluated on three datasets and five generative-recommendation backbones. It reaches a 9.22× average end-to-end inference speedup while largely preserving recommendation quality.
 
-## Supported targets
+## Supported backbones
 
-| Target family | Adapter key |
+| `BACKBONE` value | Target family |
 | --- | --- |
-| Causal language model / PEFT adapter | `causal` |
-| MiniOneRec | `minionerec` |
-| Standard T5 | `t5` |
-| CoFiRec | `cofirec` |
-| DIGER | `diger` |
-
-`apd_gr.make_target_adapter(args)` is the public target-integration entry point. It returns an adapter with `load_tokenizer`, `load_model`, `extract_cache`, `prompt_features`, cache/data accessors, and identifier-constraint accessors.
+| `letter-lc-rec` | Causal language model / PEFT adapter |
+| `letter-tiger` | Standard T5 |
+| `cofirec` | CoFiRec |
+| `diger` | DIGER |
+| `minionerec` | MiniOneRec |
 
 ## Installation
 
-```bash
-pip install -e ".[dev]"
-```
-
-Install only the target-specific extras you need when applicable:
+Create and activate a Python environment, then install the recorded dependencies from the repository root:
 
 ```bash
-pip install -e ".[diger]"
-pip install -e ".[minionerec]"
-pip install -e ".[causal-peft]"
+pip install -r requirements.txt
 ```
 
-## Workflow
+`requirements.txt` contains `-e .`, which installs APD-GR itself from the current repository. Use a CUDA/PyTorch build compatible with your GPUs. If your platform needs a different PyTorch build, install that build first and then install the remaining dependencies.
 
-1. Build a frozen-target feature cache:
+## Configure an experiment
+
+At the beginning of each script in `scripts/`, set the following values for your environment:
 
 ```bash
-apd-gr-cache --target_ckpt TARGET --target_type auto --data_path DATA --cache_dir CACHE
+CUDA_VISIBLE_DEVICES=0,1
+NPROC_PER_NODE=2
+MASTER_PORT=3211
+BACKBONE=letter-lc-rec
+MODEL=Llama-3.2-1B
+DATASET=Instruments
+TARGET_MODEL=/path/to/target-model
+DATA_PATH=/path/to/dataset
 ```
 
-2. Train the parallel draft from that cache:
-
-```bash
-apd-gr-train --cache_dir CACHE --output_dir OUTPUT --target_ckpt TARGET --data_path DATA
-```
-
-3. Run constrained beam evaluation:
-
-```bash
-apd-gr-evaluate --target_ckpt TARGET --draft_ckpt OUTPUT --data_path DATA
-```
-
-Run `apd-gr-cache --help`, `apd-gr-train --help`, or `apd-gr-evaluate --help` for complete arguments. Checkpoints, datasets, caches, and experiment outputs are external inputs and are excluded from version control.
-
-## Repository layout
+For `letter-lc-rec`, also set `BASE_MODEL` in the corresponding backbone branch. For `diger`, set `TARGET_CONFIG`. The scripts save all generated artifacts below:
 
 ```text
-src/apd_gr/
-  backends/       target-model execution implementations
-  integrations/   recommendation data and identifier semantics
-  scripts/        cache construction, training, and evaluation CLIs
-  target_adapters.py  target registration and composition entry point
-  modeling_parallel_draft.py  parallel draft architecture
+output/<BACKBONE>/<MODEL>/<DATASET>/
 ```
 
-## Reproducibility and release scope
+## Two-stage training
 
-The repository contains executable framework code only. Do not commit datasets, checkpoints, caches, virtual environments, or experiment logs. Before public release, add the final license and third-party attribution required for any upstream-derived integration implementation.
+After setting the inputs in `scripts/run_train.sh`, run:
+
+```bash
+bash scripts/run_train.sh
+```
+
+The script runs the full two-stage procedure:
+
+1. Construct a root-only target cache and train the stage-1 warm-up draft.
+2. Construct a legal-prefix target cache and train the stage-2 distillation draft initialized from stage 1.
+
+The final draft checkpoint is written to:
+
+```text
+output/<BACKBONE>/<MODEL>/<DATASET>/stage2_distill/
+```
+
+## Evaluation
+
+Set the same experiment inputs in `scripts/run_evaluate.sh`, then run:
+
+```bash
+bash scripts/run_evaluate.sh
+```
+
+The script evaluates the stage-2 draft with constrained beam search and writes metrics to:
+
+```text
+output/<BACKBONE>/<MODEL>/<DATASET>/results/evaluate.json
+```
+
+## Speed measurement
+
+Set the same experiment inputs in `scripts/run_speed.sh`, then run:
+
+```bash
+bash scripts/run_speed.sh
+```
+
+The script evaluates 1,000 examples and records wall-clock timing in:
+
+```text
+output/<BACKBONE>/<MODEL>/<DATASET>/results/speed.log
+```

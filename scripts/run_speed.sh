@@ -8,8 +8,8 @@ MASTER_PORT=3221
 BACKBONE=letter-lc-rec
 MODEL=Llama-3.2-1B
 DATASET=Instruments
-TARGET_MODEL=
-DATA_PATH=
+TARGET_MODEL=/path/to/target-model
+DATA_PATH=/path/to/dataset
 
 # letter-lc-rec requires BASE_MODEL; DIGER requires TARGET_CONFIG.
 case "$BACKBONE" in
